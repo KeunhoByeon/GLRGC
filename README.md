@@ -1,1 +1,6 @@
 # GLRGC
+
+
+```
+python train.py
+```
