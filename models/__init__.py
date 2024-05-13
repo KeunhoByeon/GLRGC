@@ -1,2 +1,2 @@
 from .classifier import Classifier
-from .segmentor import Segmentor
+from .network import Network

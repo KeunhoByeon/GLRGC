@@ -1,8 +1,5 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-
-from .network import Network
 
 
 def local_contrastive_loss(embeddings, labels, temperature=0.5):
@@ -44,21 +41,3 @@ def global_relation_loss(features_s, features_t, temperature=0.05):
 
 def consistency_loss(output1, output2, weight=1.0):
     return weight * F.mse_loss(output1, output2)
-
-
-class GLRGC:
-    def __init__(self, args, base_model, num_classes=2, **kwargs):
-        self.network = Network(base_model, num_classes=num_classes, **kwargs)
-
-        self.optimizer = torch.optim.Adam(self.network.student.parameters(), lr=args.lr)
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=20, gamma=0.5)
-        self.criterion = {
-            "CrossEntropy": nn.CrossEntropyLoss(),
-            "LocalContrastive": local_contrastive_loss,
-            "GlobalRelation": global_relation_loss,
-            "Consistency": nn.MSELoss(),
-        }
-
-    def train_one_epoch(self):
-        self.network.train()
-
