@@ -10,30 +10,43 @@ class LocalContrastiveLoss(nn.Module):
 
     def forward(self, projections):
         """
-        projections: 배치 내 모든 샘플의 투영된 특징 벡터 (2N, 128)
+        projections: The projected feature vectors of all samples in the batch (2N, 128)
         """
         if len(projections) == 0:
             return torch.tensor(0., device=projections.device)
 
-        labels = torch.arange(len(projections) // 2)
-        labels = torch.cat((labels, labels)).to(projections.device)
+        # Normalize the projections
+        projections = F.normalize(projections, dim=1)
 
-        norms = projections.norm(dim=1, keepdim=True)
-        similarity_matrix = torch.mm(projections, projections.t()) / (norms * norms.t())
+        # Compute similarity matrix
+        similarity_matrix = torch.mm(projections, projections.t())
 
+        # Generate labels
+        labels = torch.arange(len(projections) // 2).to(projections.device)
+        labels = torch.cat((labels, labels))
+
+        # Create mask to identify positive pairs
         labels = labels.unsqueeze(0)
         mask = torch.eq(labels, labels.t()).float()
-
         positive_mask = mask.fill_diagonal_(0)
 
-        exp_similarities = torch.exp(similarity_matrix / self.temperature)
-        exp_similarities = exp_similarities * positive_mask  # positive pair만을 고려
-        sum_exp_similarities = exp_similarities.sum(dim=1, keepdim=True)
+        # Apply temperature
+        similarity_matrix /= self.temperature
 
-        log_prob = similarity_matrix - torch.log(sum_exp_similarities + 1e-6)
+        # Compute exponentiated similarity scores
+        exp_similarities = torch.exp(similarity_matrix)
+
+        # Sum of similarities for denominator
+        sum_exp_similarities = exp_similarities.sum(dim=1, keepdim=True) - exp_similarities.diag().view(-1, 1)
+
+        # Compute log probabilities
+        log_prob = similarity_matrix - torch.log(sum_exp_similarities + 1e-8)
+
+        # Compute the local contrastive loss
         loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
 
         return loss
+
 
 class GlobalRelationLoss(nn.Module):
     def __init__(self):
