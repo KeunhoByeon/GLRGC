@@ -61,7 +61,7 @@ class GLRGC(nn.Module):
             local_tensor = torch.cat((self.network.feed_projection_head(features),
                                       self.network.feed_projection_head(features)), dim=0)
 
-            loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
+            loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy]) if len(output[~is_noisy]) > 0 else torch.tensor(0., device=output.device)
             loss_local_contrastive = self.local_contrastive_loss(local_tensor)
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
@@ -114,7 +114,7 @@ class GLRGC(nn.Module):
             local_tensor = torch.cat((self.network.feed_projection_head(features),
                                       self.network.feed_projection_head(features_2)), dim=0)
 
-            loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
+            loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy]) if len(output[~is_noisy]) > 0 else torch.tensor(0., device=output.device)
             loss_local_contrastive = self.local_contrastive_loss(local_tensor)
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
