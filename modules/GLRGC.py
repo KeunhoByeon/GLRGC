@@ -59,7 +59,7 @@ class GLRGC(nn.Module):
             output_ema = self.network.feed_classifier(features_ema, ema=True)
 
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
-            loss_local_contrastive = self.local_contrastive_loss(output[is_noisy], targets[is_noisy])
+            loss_local_contrastive = self.local_contrastive_loss(torch.cat((output[is_noisy], output[is_noisy]), dim=0))
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
             loss = loss_cross_entropy + self.loss_lambda * (loss_global_relation + loss_local_contrastive + loss_consistency)
