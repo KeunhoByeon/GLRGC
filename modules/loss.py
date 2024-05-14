@@ -4,33 +4,34 @@ import torch.nn.functional as F
 
 
 class LocalContrastiveLoss(nn.Module):
-    def __init__(self, temperature=0.5):
+    def __init__(self, temperature=0.5, margin=1.0):
         super(LocalContrastiveLoss, self).__init__()
+        self.margin = margin
         self.temperature = temperature
-        self.epsilon = 1e-8
 
     def forward(self, embeddings, labels):
-        # embeddings: (batch_size, features)
-        # labels: (batch_size,)
-        device = embeddings.device
-        batch_size = embeddings.size(0)
-
-        if batch_size == 0:
+        if embeddings.size(0) == 0:
             return torch.tensor(0., device=embeddings.device)
 
-        sim_matrix = F.cosine_similarity(embeddings.unsqueeze(1), embeddings.unsqueeze(0), dim=2) / self.temperature
-
+        distance_matrix = self.pdist(embeddings, squared=False)
         labels = labels.unsqueeze(1)
-        mask = torch.eq(labels, labels.T).float().to(device)
+        mask = torch.eq(labels, labels.T).float()
 
-        eye_mask = torch.eye(batch_size).to(device)
-        sim_matrix = sim_matrix.masked_fill_(eye_mask.bool(), float('-inf'))
-        exp_sim = torch.exp(sim_matrix)
-        pos_sum = (exp_sim * mask).sum(dim=1)
-        all_sum = exp_sim.sum(dim=1)
+        # 같은 클래스 내의 샘플 거리는 0에 가깝게, 다른 클래스는 margin 이상이 되게 유도
+        positive_loss = (1 - mask) * F.relu(self.margin - distance_matrix) ** 2
+        negative_loss = mask * distance_matrix ** 2
 
-        loss = -torch.log(pos_sum / all_sum).mean()
-        return loss
+        loss = positive_loss + negative_loss
+        return loss.mean()
+
+    def pdist(self, embeddings, squared=False):
+        e_square = embeddings.square().sum(dim=1)
+        prod = embeddings @ embeddings.T
+        dist = e_square.unsqueeze(1) + e_square.unsqueeze(0) - 2 * prod
+        dist = dist.clamp(min=0)
+        if not squared:
+            dist = dist.sqrt()
+        return dist
 
 
 class GlobalRelationLoss(nn.Module):

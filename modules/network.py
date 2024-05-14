@@ -66,11 +66,11 @@ class Network(nn.Module):
         x = model.layer4(x)
 
         x = model.avgpool(x)
-        x = torch.flatten(x, 1)
 
         return x
 
     def feed_classifier(self, x, ema=False):
+        x = torch.flatten(x, 1)
         if ema:
             return self.teacher.fc(x)
         else:

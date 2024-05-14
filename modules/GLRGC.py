@@ -96,10 +96,10 @@ class GLRGC(nn.Module):
             self.optimizer.zero_grad()
 
             features = self.network.extract_feature(inputs_1)
-            features_ema = self.network.extract_feature(inputs_2, ema=True)
-
             output = self.network.feed_classifier(features)
-            output_ema = self.network.feed_classifier(features_ema, ema=True)
+            with torch.no_grad():
+                features_ema = self.network.extract_feature(inputs_2, ema=True)
+                output_ema = self.network.feed_classifier(features_ema, ema=True)
 
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
             loss_local_contrastive = self.local_contrastive_loss(output[is_noisy], targets[is_noisy])
@@ -126,7 +126,6 @@ class GLRGC(nn.Module):
             preds_ema = torch.argmax(output_ema, dim=1)
             mat_ema[0] += torch.sum(preds_ema == targets).item()
             mat_ema[1] += len(targets)
-
 
             num_progress += len(targets)
             if num_progress >= next_print:
