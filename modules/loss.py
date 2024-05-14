@@ -35,21 +35,22 @@ class LocalContrastiveLoss(nn.Module):
 
 
 class GlobalRelationLoss(nn.Module):
-    def __init__(self, temperature=0.05):
+    def __init__(self):
         super(GlobalRelationLoss, self).__init__()
-        self.temperature = temperature  # 0.05?
-        self.epsilon = 1e-8
+
+    def calculate_relation_matrix(self, features):
+        relation_matrix = torch.matmul(features, features.T)
+        relation_matrix = F.normalize(relation_matrix, p=2, dim=1)  # L2 row normalization
+        return relation_matrix
+
+    def symmetric_kl_divergence(self, p, q):
+        kl_pq = F.kl_div(p.log(), q, reduction='batchmean')
+        kl_qp = F.kl_div(q.log(), p, reduction='batchmean')
+        return 0.5 * (kl_pq + kl_qp)
 
     def forward(self, features_s, features_t):
-        similarities_s = torch.mm(features_s, features_s.t()) / self.temperature
-        similarities_t = torch.mm(features_t, features_t.t()) / self.temperature
+        relation_matrix_s = self.calculate_relation_matrix(features_s)
+        relation_matrix_t = self.calculate_relation_matrix(features_t)
 
-        p_s = F.softmax(similarities_s, dim=1) + self.epsilon
-        p_t = F.softmax(similarities_t, dim=1) + self.epsilon
-
-        kl_st = F.kl_div(p_s.log(), p_t, reduction='batchmean')
-        kl_ts = F.kl_div(p_t.log(), p_s, reduction='batchmean')
-
-        loss = 0.5 * (kl_st + kl_ts)
-
+        loss = self.symmetric_kl_divergence(relation_matrix_s, relation_matrix_t)
         return loss
