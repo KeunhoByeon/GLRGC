@@ -43,10 +43,7 @@ class LocalContrastiveLoss(nn.Module):
         log_prob = similarity_matrix - torch.log(sum_exp_similarities + 1e-8)
 
         # Compute the local contrastive loss
-        try:
-            loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
-        except:
-            import pdb; pdb.set_trace()
+        loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
 
         return loss
 
