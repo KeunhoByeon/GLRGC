@@ -12,7 +12,8 @@ class LocalContrastiveLoss(nn.Module):
         """
         projections: 배치 내 모든 샘플의 투영된 특징 벡터 (2N, 128)
         """
-        labels = torch.arange(len(projections) // 2).repeat(2)
+        labels = torch.arange(len(projections) // 2)
+        labels = torch.cat((labels, labels)).to(projections.device)
 
         # Cosine similarity 계산
         norms = projections.norm(dim=1, keepdim=True)
