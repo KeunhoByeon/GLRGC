@@ -12,6 +12,9 @@ class LocalContrastiveLoss(nn.Module):
         """
         projections: 배치 내 모든 샘플의 투영된 특징 벡터 (2N, 128)
         """
+        if len(projections) == 0:
+            return torch.tensor(0., device=projections.device)
+
         labels = torch.arange(len(projections) // 2)
         labels = torch.cat((labels, labels)).to(projections.device)
 
