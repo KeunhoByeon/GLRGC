@@ -18,27 +18,22 @@ class LocalContrastiveLoss(nn.Module):
         labels = torch.arange(len(projections) // 2)
         labels = torch.cat((labels, labels)).to(projections.device)
 
-        # Cosine similarity 계산
         norms = projections.norm(dim=1, keepdim=True)
         similarity_matrix = torch.mm(projections, projections.t()) / (norms * norms.t())
 
-        # Labels를 이용하여 positive mask 생성
         labels = labels.unsqueeze(0)
         mask = torch.eq(labels, labels.t()).float()
 
-        # Negative pair를 위한 mask 생성
         positive_mask = mask.fill_diagonal_(0)
 
-        # 각 positive pair에 대한 유사도 계산 및 로그 소프트맥스 적용
         exp_similarities = torch.exp(similarity_matrix / self.temperature)
         exp_similarities = exp_similarities * positive_mask  # positive pair만을 고려
         sum_exp_similarities = exp_similarities.sum(dim=1, keepdim=True)
 
-        log_prob = similarity_matrix - torch.log(sum_exp_similarities)
+        log_prob = similarity_matrix - torch.log(sum_exp_similarities + 1e-8)
         loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
 
         return loss
-
 
 class GlobalRelationLoss(nn.Module):
     def __init__(self):
