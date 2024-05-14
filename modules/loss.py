@@ -35,7 +35,7 @@ class LocalContrastiveLoss(nn.Module):
         sum_exp_similarities = exp_similarities.sum(dim=1, keepdim=True)
 
         log_prob = similarity_matrix - torch.log(sum_exp_similarities)
-        loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
+        loss = torch.sum(log_prob * positive_mask) / positive_mask.sum()
 
         return loss
 
