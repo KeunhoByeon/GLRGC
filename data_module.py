@@ -25,7 +25,7 @@ def prepare_gastric_dataset(stage="train", csv_dir="/data2/HistoImages/gastric_k
         csv_path = os.path.join(csv_dir, "class4_step10_ds_{}.csv".format(stage))
     df = pd.read_csv(csv_path)
     image_id = df["path"].values
-    labels = df["class"].values
+    labels = df["label"].values
     return list(zip(image_id, labels))
 
 
