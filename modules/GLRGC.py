@@ -58,8 +58,8 @@ class GLRGC(nn.Module):
             output = self.network.feed_classifier(features)
             output_ema = self.network.feed_classifier(features_ema, ema=True)
 
-            local_tensor = torch.cat((self.network.feed_projection_head(features),
-                                      self.network.feed_projection_head(features)), dim=0)
+            local_tensor = torch.cat((self.network.feed_projection_head(features[is_noisy]),
+                                      self.network.feed_projection_head(features[is_noisy])), dim=0)
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy]) if len(output[~is_noisy]) > 0 else torch.tensor(0., device=output.device)
             loss_local_contrastive = self.local_contrastive_loss(local_tensor) if len(output[is_noisy]) > 0 else torch.tensor(0., device=output.device)
             loss_global_relation = self.global_relation_loss(features, features_ema)
@@ -110,7 +110,7 @@ class GLRGC(nn.Module):
                 output_ema = self.network.feed_classifier(features_ema, ema=True)
 
             features_2 = self.network.extract_feature(inputs_2[is_noisy])
-            local_tensor = torch.cat((self.network.feed_projection_head(features),
+            local_tensor = torch.cat((self.network.feed_projection_head(features[is_noisy]),
                                       self.network.feed_projection_head(features_2)), dim=0)
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy]) if len(output[~is_noisy]) > 0 else torch.tensor(0., device=output.device)
             loss_local_contrastive = self.local_contrastive_loss(local_tensor) if len(output[is_noisy]) > 0 else torch.tensor(0., device=output.device)
