@@ -77,9 +77,9 @@ class NoisyDataset(Dataset):
                 num_noise += 1
         if logger is not None:
             logger.print_and_write_log(
-                "[Dataset {}] Num Clean {}, Num Noise ({})".format(self.tag, num_clean, num_noise))
+                "[Dataset {}] Num Clean {}, Num Noise {}".format(self.tag, num_clean, num_noise))
         else:
-            print("[Dataset {}] Num Clean {}, Num Noise ({})".format(self.tag, num_clean, num_noise))
+            print("[Dataset {}] Num Clean {}, Num Noise {}".format(self.tag, num_clean, num_noise))
 
     def __getitem__(self, index):
         img_path, gt = self.data_pair[index]
