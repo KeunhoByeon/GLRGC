@@ -75,6 +75,15 @@ class NoisyDataset(Dataset):
             else:
                 self.noisy_dict[file_path] = True
                 num_noise += 1
+
+        if num_noise == 0:
+            cnt = 0
+            for file_path, gt in self.data_pair:
+                self.noisy_dict[file_path] = True
+                cnt += 1
+                if cnt == 10:
+                    break
+
         if logger is not None:
             logger.print_and_write_log(
                 "[Dataset {}] Num Clean {}, Num Noise {}".format(self.tag, num_clean, num_noise))

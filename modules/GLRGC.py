@@ -64,6 +64,22 @@ class GLRGC(nn.Module):
             loss_consistency = self.consistency_loss(output, output_ema)
             loss = loss_cross_entropy + self.loss_lambda * (loss_global_relation + loss_local_contrastive + loss_consistency)
 
+            debug = False
+            if torch.isnan(loss_cross_entropy).any() or torch.isinf(loss_cross_entropy).any():
+                print("NaNs or Infs in loss_cross_entropy")
+                debug=True
+            if torch.isnan(loss_local_contrastive).any() or torch.isinf(loss_local_contrastive).any():
+                print("NaNs or Infs in loss_local_contrastive")
+                debug = True
+            if torch.isnan(loss_global_relation).any() or torch.isinf(loss_global_relation).any():
+                print("NaNs or Infs in loss_global_relation")
+                debug = True
+            if torch.isnan(loss_consistency).any() or torch.isinf(loss_consistency).any():
+                print("NaNs or Infs in loss_consistency")
+                debug=True
+            if debug:
+                import pdb; pdb.set_trace()
+
             preds = torch.argmax(output, dim=1)
             preds_ema = torch.argmax(output_ema, dim=1)
 
