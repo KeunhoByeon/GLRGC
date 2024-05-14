@@ -9,28 +9,33 @@ class LocalContrastiveLoss(nn.Module):
         self.temperature = temperature
 
     def forward(self, projections):
-        """
-        projections: 배치 내 모든 샘플의 투영된 특징 벡터 (2N, 128)
-        """
-        if len(projections) == 0:
+        if projections.size(0) == 0:
             return torch.tensor(0., device=projections.device)
 
-        labels = torch.arange(len(projections) // 2)
-        labels = torch.cat((labels, labels)).to(projections.device)
+        # 레이블 생성
+        labels = torch.arange(projections.size(0) // 2, device=projections.device)
+        labels = torch.cat((labels, labels))
 
+        # 코사인 유사도 계산
         norms = projections.norm(dim=1, keepdim=True)
         similarity_matrix = torch.mm(projections, projections.t()) / (norms * norms.t())
 
-        labels = labels.unsqueeze(0)
-        mask = torch.eq(labels, labels.t()).float()
+        # 자기 자신과의 유사도를 -inf로 설정
+        similarity_matrix.fill_diagonal_(float('-inf'))
 
-        positive_mask = mask.fill_diagonal_(0)
-
+        # 유사도 행렬을 소프트맥스 적용 전에 exp 취하기
         exp_similarities = torch.exp(similarity_matrix / self.temperature)
-        exp_similarities = exp_similarities * positive_mask  # positive pair만을 고려
+
+        # Positive 마스크 생성
+        labels = labels.unsqueeze(0)
+        positive_mask = torch.eq(labels, labels.t()).float()
+        positive_mask.fill_diagonal_(0)
+
+        # 소프트맥스 분모 계산
         sum_exp_similarities = exp_similarities.sum(dim=1, keepdim=True)
 
-        log_prob = similarity_matrix - torch.log(sum_exp_similarities + 1e-8)
+        # 로그 확률 계산
+        log_prob = torch.log(exp_similarities / sum_exp_similarities)
         loss = -torch.sum(log_prob * positive_mask) / positive_mask.sum()
 
         return loss
