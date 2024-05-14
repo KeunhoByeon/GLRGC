@@ -18,7 +18,7 @@ def prepare_colon_test2_dataset(stage="test", data_dir="/data2/HistoImages/colon
     return list(zip(file_list, label_list))
 
 
-def prepare_gastric_dataset(stage="train", csv_dir="/home/compu/keunho/lib/GLRGC/dataset_path/gastric"):
+def prepare_gastric_dataset(stage="train", csv_dir="/data2/HistoImages/gastric_kbsmc/csv"):
     csv_path = os.path.join(csv_dir, "class4_step10_ds_{}.csv".format(stage))
     df = pd.read_csv(csv_path)
     image_id = df["path"].values
