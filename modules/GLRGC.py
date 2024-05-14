@@ -1,4 +1,4 @@
-from time import time
+import time
 
 import torch
 import torch.nn as nn
@@ -13,7 +13,7 @@ class GLRGC(nn.Module):
         self.args = args
         self.tag = tag
 
-        self.network = Network(base_model, num_classes=num_classes, **kwargs)
+        self.network = Network(base_model, num_classes=num_classes, include_ema=True, **kwargs)
         self.optimizer = torch.optim.Adam(self.network.student.parameters(), lr=args.lr, weight_decay=0.0001)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.9)
         self.criterion = {
@@ -31,6 +31,9 @@ class GLRGC(nn.Module):
         self.loss_lambda = 0
         self.max_loss_lambda = self.args.loss_lambda
         self.loss_lambda_warmup_duration = self.args.loss_lambda_warmup_duration
+
+    def forward(self, x, ema=False):
+        return self.network(x, ema=ema)
 
     def val(self, val_loader, epoch=0, logger=None):
         self.network.eval()
@@ -59,10 +62,10 @@ class GLRGC(nn.Module):
             preds_ema = torch.argmax(output_ema, dim=1)
 
             mat[0] += torch.sum(preds == targets).item()
-            mat[1] += len(inputs)
+            mat[1] += len(targets)
 
             mat_ema[0] += torch.sum(preds_ema == targets).item()
-            mat_ema[1] += len(inputs)
+            mat_ema[1] += len(targets)
 
             if logger is not None:
                 logger.add_history('total', {'loss': loss.item(),
@@ -73,7 +76,7 @@ class GLRGC(nn.Module):
             logger('*Validation {}'.format(epoch), history_key='total',
                    accuracy=round(mat[0] / mat[1] * 100, 4),
                    accuracy_ema=round(mat_ema[0] / mat_ema[1] * 100, 4),
-                   time=time.strftime('%Y.%m.%d.%H:%M:%S'))
+                   time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
 
         return mat[0] / mat[1] * 100, mat_ema[0] / mat_ema[1] * 100
 
@@ -84,15 +87,16 @@ class GLRGC(nn.Module):
 
         mat, mat_ema = [0, 0], [0, 0]
         num_progress, next_print = 0, self.args.print_freq
-        for i, (input_paths, inputs, targets, is_noisy) in enumerate(train_loader):
+        for i, (input_paths, inputs_1, inputs_2, targets, is_noisy) in enumerate(train_loader):
             if torch.cuda.is_available():
-                inputs = inputs.cuda()
+                inputs_1 = inputs_1.cuda()
+                inputs_2 = inputs_2.cuda()
                 targets = targets.cuda()
 
             self.optimizer.zero_grad()
 
-            features = self.network.extract_feature(inputs)
-            features_ema = self.network.extract_feature(inputs, ema=True)
+            features = self.network.extract_feature(inputs_1)
+            features_ema = self.network.extract_feature(inputs_2, ema=True)
 
             output = self.network.feed_classifier(features)
             output_ema = self.network.feed_classifier(features_ema, ema=True)
@@ -102,6 +106,13 @@ class GLRGC(nn.Module):
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
             loss = loss_cross_entropy + self.loss_lambda * (loss_global_relation + loss_local_contrastive + loss_consistency)
+
+            if logger is not None:
+                logger.add_history('total', {'loss': loss.item(), 'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
+                                             'loss_global': loss_global_relation.item(), 'loss_const': loss_consistency.item()})
+                logger.add_history('batch', {'loss': loss.item(), 'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
+                                             'loss_global': loss_global_relation.item(), 'loss_const': loss_consistency.item()})
+
             loss.backward()
 
             self.optimizer.step()
@@ -110,24 +121,20 @@ class GLRGC(nn.Module):
             # Log
             preds = torch.argmax(output, dim=1)
             mat[0] += torch.sum(preds == targets).item()
-            mat[1] += len(inputs)
+            mat[1] += len(targets)
 
             preds_ema = torch.argmax(output_ema, dim=1)
             mat_ema[0] += torch.sum(preds_ema == targets).item()
-            mat_ema[1] += len(inputs)
+            mat_ema[1] += len(targets)
 
-            if logger is not None:
-                logger.add_history('total', {'loss': loss.item(), 'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
-                                             'loss_global': loss_global_relation.item(), 'loss_const': loss_consistency.item()})
-                logger.add_history('batch', {'loss': loss.item(), 'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
-                                             'loss_global': loss_global_relation.item(), 'loss_const': loss_consistency.item()})
 
+            num_progress += len(targets)
             if num_progress >= next_print:
                 if logger is not None:
                     logger(history_key='batch', epoch=epoch, batch=num_progress,
                            accuracy=round(mat[0] / mat[1] * 100, 4),
                            accuracy_ema=round(mat_ema[0] / mat_ema[1] * 100, 4),
-                           time=time.strftime('%Y.%m.%d.%H:%M:%S'))
+                           time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
                     next_print += self.args.print_freq
 
         if logger is not None:
@@ -136,7 +143,7 @@ class GLRGC(nn.Module):
                    accuracy_ema=round(mat_ema[0] / mat_ema[1] * 100, 4),
                    lr=round(self.optimizer.param_groups[0]['lr'], 12),
                    loss_lambda=self.loss_lambda,
-                   time=time.strftime('%Y.%m.%d.%H:%M:%S'))
+                   time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
 
         if self.loss_lambda < self.max_loss_lambda:
             self.loss_lambda += self.max_loss_lambda / self.loss_lambda_warmup_duration

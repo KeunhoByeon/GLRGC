@@ -45,7 +45,7 @@ def run(args):
     nlf_loader = torch.utils.data.DataLoader(nlf_dataset, batch_size=1, num_workers=1, pin_memory=True, shuffle=False)
 
     logger = Logger(os.path.join(args.result, 'log.txt'), epochs=args.epochs, dataset_size=len(train_loader_A.dataset), float_round=5)
-    logger.set_sort(['loss', 'loss_CE', 'loss_local', 'loss_global', 'loss_const', 'accuracy', 'accuracy_ema', 'lr', 'time'])
+    logger.set_sort(['loss', 'loss_CE', 'loss_local', 'loss_global', 'loss_const', 'accuracy', 'accuracy_ema', 'loss_lambda', 'lr', 'time'])
     logger(str(args))
 
     save_dir = os.path.join(args.result, 'checkpoints')

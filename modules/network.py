@@ -23,7 +23,7 @@ class Network(nn.Module):
         self.student = get_model(base_model, num_classes=num_classes)
         self.ema_temperature = kwargs.get("ema_temperature", 0.99)
         if include_ema:
-            self.teacher = copy.deepcopy(self.model)
+            self.teacher = copy.deepcopy(self.student)
             for param in self.teacher.parameters():
                 param.detach_()
 

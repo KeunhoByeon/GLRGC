@@ -13,7 +13,7 @@ class NLF:
         if self.threshold > 0.5:
             self.threshold -= 0.04
 
-    def __call__(self, network: nn.Module, dataloader):
+    def __call__(self, network, dataloader):
         file_paths, losses = [], []
 
         network.eval()
