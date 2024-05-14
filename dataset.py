@@ -7,7 +7,6 @@ from torchvision import transforms
 from data_module import *
 
 
-
 class RandomDynamicCrop(transforms.RandomCrop):
     def __init__(self, scale_range=(0.2, 1.0)):
         super().__init__(size=(0, 0))  # Initialize with dummy values

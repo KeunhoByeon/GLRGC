@@ -16,6 +16,20 @@ def get_model(model_name, **kwargs):
     return model
 
 
+class ProjectionHead(nn.Module):
+    def __init__(self, input_dim, hidden_dim=256, output_dim=128):
+        super(ProjectionHead, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        return x
+
+
 class Network(nn.Module):
     def __init__(self, base_model, num_classes=2, include_ema=False, **kwargs):
         super(Network, self).__init__()
@@ -26,6 +40,8 @@ class Network(nn.Module):
             self.teacher = copy.deepcopy(self.student)
             for param in self.teacher.parameters():
                 param.detach_()
+        proj_in_channel = self.student.fc.in_features
+        self.projection_head = ProjectionHead(input_dim=proj_in_channel, hidden_dim=proj_in_channel, output_dim=128)
 
     def train(self):
         self.student.train()
@@ -81,6 +97,9 @@ class Network(nn.Module):
             return self.teacher.fc(x)
         else:
             return self.student.fc(x)
+
+    def feed_projection_head(self, x):
+        return self.projection_head(x)
 
     def forward(self, x, ema=False):
         if ema:

@@ -58,8 +58,11 @@ class GLRGC(nn.Module):
             output = self.network.feed_classifier(features)
             output_ema = self.network.feed_classifier(features_ema, ema=True)
 
+            local_tensor = torch.cat((self.network.feed_projection_head(features),
+                                      self.network.feed_projection_head(features)), dim=0)
+
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
-            loss_local_contrastive = self.local_contrastive_loss(torch.cat((output[is_noisy], output[is_noisy]), dim=0))
+            loss_local_contrastive = self.local_contrastive_loss(local_tensor)
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
             loss = loss_cross_entropy + self.loss_lambda * (loss_global_relation + loss_local_contrastive + loss_consistency)
@@ -106,10 +109,13 @@ class GLRGC(nn.Module):
             with torch.no_grad():
                 features_ema = self.network.extract_feature(inputs_2, ema=True)
                 output_ema = self.network.feed_classifier(features_ema, ema=True)
-            output_2 = self.network.forward(inputs_2[is_noisy])
+
+            features_2 = self.network.extract_feature(inputs_2[is_noisy])
+            local_tensor = torch.cat((self.network.feed_projection_head(features),
+                                      self.network.feed_projection_head(features_2)), dim=0)
 
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
-            loss_local_contrastive = self.local_contrastive_loss(torch.cat((output[is_noisy], output_2), dim=0))
+            loss_local_contrastive = self.local_contrastive_loss(local_tensor)
             loss_global_relation = self.global_relation_loss(features, features_ema)
             loss_consistency = self.consistency_loss(output, output_ema)
             loss = loss_cross_entropy + self.loss_lambda * (loss_global_relation + loss_local_contrastive + loss_consistency)
