@@ -41,6 +41,6 @@ class NLF:
         clean_probabilities = probabilities[:, clean_component_index]
 
         noise_indices = np.where(clean_probabilities < self.threshold)[0]
-        noise_paths = file_paths[noise_indices]
+        noise_paths = np.array(file_paths)[noise_indices]
 
         return noise_paths
