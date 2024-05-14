@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class LocalContrastiveLoss(nn.Module):
-    def __init__(self, temperature=0.5, margin=1.0):
+    def __init__(self, temperature=0.5, margin=0.5):
         super(LocalContrastiveLoss, self).__init__()
         self.margin = margin
         self.temperature = temperature
