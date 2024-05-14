@@ -28,7 +28,7 @@ class GLRGC(nn.Module):
         self.global_relation_loss = GlobalRelationLoss()
         self.consistency_loss = nn.MSELoss()
 
-        self.loss_lambda = 0
+        self.loss_lambda = 0.1
         self.max_loss_lambda = self.args.loss_lambda
         self.loss_lambda_warmup_duration = self.args.loss_lambda_warmup_duration
 
@@ -58,7 +58,6 @@ class GLRGC(nn.Module):
             output = self.network.feed_classifier(features)
             output_ema = self.network.feed_classifier(features_ema, ema=True)
 
-            print(output.shape, targets.shape, output[~is_noisy].shape, targets[~is_noisy].shape, output[is_noisy].shape, targets[is_noisy].shape)
             loss_cross_entropy = self.cross_entropy_loss(output[~is_noisy], targets[~is_noisy])
             loss_local_contrastive = self.local_contrastive_loss(output[is_noisy], targets[is_noisy])
             loss_global_relation = self.global_relation_loss(features, features_ema)
@@ -136,6 +135,7 @@ class GLRGC(nn.Module):
 
             num_progress += len(targets)
             if num_progress >= next_print:
+                print(output.shape, targets.shape, output[~is_noisy].shape, targets[~is_noisy].shape, output[is_noisy].shape, targets[is_noisy].shape)
                 if logger is not None:
                     logger(history_key='batch', epoch=epoch, batch=num_progress,
                            accuracy=round(mat[0] / mat[1] * 100, 4),
