@@ -27,6 +27,12 @@ class Network(nn.Module):
             for param in self.teacher.parameters():
                 param.detach_()
 
+    def train(self):
+        self.student.train()
+
+    def eval(self):
+        self.student.eval()
+
     def update_ema(self):
         if not self.training:
             print("EMA update should only be called during training")
