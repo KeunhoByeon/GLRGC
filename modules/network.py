@@ -21,6 +21,7 @@ class Network(nn.Module):
         super(Network, self).__init__()
 
         self.student = get_model(base_model, num_classes=num_classes)
+        self.ema_temperature = kwargs.get("ema_temperature", 0.99)
         if include_ema:
             self.teacher = copy.deepcopy(self.model)
             for param in self.teacher.parameters():
@@ -31,19 +32,22 @@ class Network(nn.Module):
             print("EMA update should only be called during training")
             raise AssertionError
 
-        model_params = OrderedDict(self.student.named_parameters())
-        shadow_params = OrderedDict(self.teacher.named_parameters())
-        assert model_params.keys() == shadow_params.keys()
+        student_params = OrderedDict(self.student.named_parameters())
+        teacher_params = OrderedDict(self.teacher.named_parameters())
+        assert student_params.keys() == teacher_params.keys(), "Student and Teacher models are not aligned"
 
-        for name, param in model_params.items():
-            shadow_params[name].sub_((1. - self.decay) * (shadow_params[name] - param))
+        # Update teacher model parameters
+        with torch.no_grad():
+            for (name, student_param), (_, teacher_param) in zip(student_params.items(), teacher_params.items()):
+                teacher_param.data = self.ema_temperature * teacher_param.data + (1 - self.ema_temperature) * student_param.data
 
-        model_buffers = OrderedDict(self.student.named_buffers())
-        shadow_buffers = OrderedDict(self.teacher.named_buffers())
-        assert model_buffers.keys() == shadow_buffers.keys()
+        student_buffers = OrderedDict(self.student.named_buffers())
+        teacher_buffers = OrderedDict(self.teacher.named_buffers())
+        assert student_buffers.keys() == teacher_buffers.keys(), "Buffers are not aligned"
 
-        for name, buffer in model_buffers.items():
-            shadow_buffers[name].copy_(buffer)
+        # Update buffers directly
+        for (name, student_buffer), (_, teacher_buffer) in zip(student_buffers.items(), teacher_buffers.items()):
+            teacher_buffer.data.copy_(student_buffer.data)
 
     def extract_feature(self, x, ema=False):
         if ema:

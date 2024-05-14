@@ -9,32 +9,29 @@ class LocalContrastiveLoss(nn.Module):
         self.temperature = temperature
 
     def forward(self, embeddings, labels):
-        # embeddings: (batch_size, features) 텐서
-        # labels: (batch_size,) 텐서
+        # embeddings: (batch_size, features)
+        # labels: (batch_size,)
         device = embeddings.device
         batch_size = embeddings.size(0)
 
-        # 유사도 행렬 계산
         sim_matrix = F.cosine_similarity(embeddings.unsqueeze(1), embeddings.unsqueeze(0), dim=2) / self.temperature
 
-        # 레이블 기반 마스크 생성
         labels = labels.unsqueeze(1)
         mask = torch.eq(labels, labels.T).float().to(device)
 
-        # 손실 계산
-        sim_matrix = sim_matrix - torch.eye(batch_size).to(device) * 1e12  # 자기 자신과의 유사도 제거
+        sim_matrix = sim_matrix - torch.eye(batch_size).to(device) * 1e12
         exp_sim = torch.exp(sim_matrix)
-        pos_sum = (exp_sim * mask).sum(dim=1)  # 긍정적 쌍의 합
-        all_sum = exp_sim.sum(dim=1)  # 모든 쌍의 합
+        pos_sum = (exp_sim * mask).sum(dim=1)
+        all_sum = exp_sim.sum(dim=1)
 
-        loss = -torch.log(pos_sum / all_sum).mean()  # 대조적 손실
+        loss = -torch.log(pos_sum / all_sum).mean()
         return loss
 
 
 class GlobalRelationLoss(nn.Module):
-    def __init__(self, temperature=0.05):
+    def __init__(self, temperature=1.):
         super(GlobalRelationLoss, self).__init__()
-        self.temperature = temperature
+        self.temperature = temperature  # 0.05?
 
     def forward(self, features_s, features_t):
         similarities_s = torch.mm(features_s, features_s.t()) / self.temperature
@@ -49,4 +46,3 @@ class GlobalRelationLoss(nn.Module):
         loss = 0.5 * (kl_st + kl_ts)
 
         return loss
-

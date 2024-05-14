@@ -26,7 +26,10 @@ class Logger:
         for key, item in data.items():
             if key not in self.history[history_key].keys():
                 self.history[history_key][key] = []
-            self.history[history_key][key].append(item)
+            if type(item) in (list, tuple):
+                self.history[history_key][key].extend(item)
+            else:
+                self.history[history_key][key].append(item)
 
     def get_history_data(self, history_key, data_key):
         return np.mean(self.history[history_key][data_key])
@@ -90,10 +93,14 @@ class Logger:
         self._make_line(titles, kwargs)
         print(self.current_line)
 
-    def print_and_write_log(self, *titles, **kwargs):
-        self._make_line(titles, kwargs)
-        self.wf.write(self.current_line + '\n')
-        print(self.current_line)
+    def print_and_write_log(self, curr_line=None, *titles, **kwargs):
+        if curr_line is not None:
+            self.wf.write(curr_line + '\n')
+            print(curr_line)
+        else:
+            self._make_line(titles, kwargs)
+            self.wf.write(self.current_line + '\n')
+            print(self.current_line)
 
     def __call__(self, *titles, **kwargs):
         self._make_line(titles, kwargs)
