@@ -82,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--data', default='colon')
     parser.add_argument('--workers', default=8, type=int, help='number of data loading workers')
     parser.add_argument('--input_size', default=384, type=int, help='image input size')
-    parser.add_argument('--random_crop', default=(0.8, 1.2))
+    parser.add_argument('--random_crop', default=(0.8, 1.0))
     # Training Arguments
     parser.add_argument('--start_epoch', default=0, type=int, help='manual epoch number')
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
