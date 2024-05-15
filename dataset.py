@@ -25,7 +25,8 @@ class RandomDynamicCrop(transforms.RandomCrop):
 
 
 class NoisyDataset(Dataset):
-    def __init__(self, dataset_name, stage="train", input_size: int = None, tag=""):
+    def __init__(self, args, dataset_name, stage="train", input_size: int = None, tag=""):
+        self.args = args
         self.dataset_name = dataset_name
         self.stage = stage
         self.input_size = input_size
@@ -54,7 +55,7 @@ class NoisyDataset(Dataset):
                 transforms.RandomRotation(30),
                 transforms.ToTensor(),
             ])
-            self.random_crop = RandomDynamicCrop((0.2, 1.0))
+            self.random_crop = RandomDynamicCrop(tuple(args.random_crop))
         else:
             self.transform = transforms.Compose([
                 transforms.Resize((input_size, input_size)),

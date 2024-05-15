@@ -147,7 +147,7 @@ class GLRGC(nn.Module):
 
             self.optimizer.step()
 
-            if epoch < 5:
+            if epoch < self.args.warmup_ema:
                 self.network.update_ema()
 
             # Log
@@ -176,7 +176,7 @@ class GLRGC(nn.Module):
                    loss_lambda=self.loss_lambda,
                    time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
 
-        if self.loss_lambda < self.max_loss_lambda and epoch >= 5:
+        if self.loss_lambda < self.max_loss_lambda and epoch >= self.args.warmup_ema:
             self.loss_lambda += self.max_loss_lambda / self.loss_lambda_warmup_duration
             self.loss_lambda = min(self.loss_lambda, self.max_loss_lambda)
         self.scheduler.step()

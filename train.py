@@ -34,14 +34,14 @@ def run(args):
             network_A.network = network_A.network.cuda()
             network_B.network = network_B.network.cuda()
 
-    train_dataset_A = NoisyDataset(args.data, input_size=args.input_size, stage="train", tag="A")
+    train_dataset_A = NoisyDataset(args, args.data, input_size=args.input_size, stage="train", tag="A")
     train_loader_A = torch.utils.data.DataLoader(train_dataset_A, batch_size=args.batch_size, num_workers=args.workers, pin_memory=True, shuffle=True)
-    train_dataset_B = NoisyDataset(args.data, input_size=args.input_size, stage="train", tag="B")
+    train_dataset_B = NoisyDataset(args, args.data, input_size=args.input_size, stage="train", tag="B")
     train_loader_B = torch.utils.data.DataLoader(train_dataset_B, batch_size=args.batch_size, num_workers=args.workers, pin_memory=True, shuffle=True)
-    val_dataset = NoisyDataset(args.data, input_size=args.input_size, stage="valid", tag="Valid")
+    val_dataset = NoisyDataset(args, args.data, input_size=args.input_size, stage="valid", tag="Valid")
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.workers, pin_memory=True, shuffle=False)
 
-    nlf_dataset = NoisyDataset(args.data, input_size=args.input_size, stage="train", tag="NLF")
+    nlf_dataset = NoisyDataset(args, args.data, input_size=args.input_size, stage="train", tag="NLF")
     nlf_loader = torch.utils.data.DataLoader(nlf_dataset, batch_size=1, num_workers=1, pin_memory=True, shuffle=False)
 
     logger = Logger(os.path.join(args.result, 'log.txt'), epochs=args.epochs, dataset_size=len(train_loader_A.dataset), float_round=5)
@@ -82,6 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--data', default='colon')
     parser.add_argument('--workers', default=8, type=int, help='number of data loading workers')
     parser.add_argument('--input_size', default=384, type=int, help='image input size')
+    parser.add_argument('--random_crop', default=(0.8, 1.2))
     # Training Arguments
     parser.add_argument('--start_epoch', default=0, type=int, help='manual epoch number')
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
@@ -90,6 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--local_contrastive_weight', default=1., type=float)
     parser.add_argument('--loss_lambda', default=1., type=float)
     parser.add_argument('--loss_lambda_warmup_duration', default=10, type=int)
+    parser.add_argument('--warmup_ema', default=10, type=int)
     parser.add_argument('--seed', default=103, type=int, help='seed for initializing training.')
     # Validation and Debugging Arguments
     parser.add_argument('--val_freq', default=1, type=int, help='validation frequency')
