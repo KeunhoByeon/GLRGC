@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 
 class NLF:
@@ -25,9 +26,9 @@ class NLF:
                     targets = targets.cuda()
 
                 output_ema = network(inputs, ema=True)
-                loss = self.criterion(output_ema, targets)
-                losses.append(loss.item())
-                file_paths.append(input_paths[0])
+                curr_losses = F.cross_entropy(output_ema, targets, reduction='none')
+                losses.extend(curr_losses.tolist())
+                file_paths.extend(input_paths.tolist())
 
         max_loss = max(losses)
         normalized_losses = np.array(losses) / max_loss
