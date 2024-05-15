@@ -175,7 +175,7 @@ class GLRGC(nn.Module):
                    loss_lambda=self.loss_lambda,
                    time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
 
-        if self.loss_lambda < self.max_loss_lambda:
+        if self.loss_lambda < self.max_loss_lambda and epoch >= 5:
             self.loss_lambda += self.max_loss_lambda / self.loss_lambda_warmup_duration
             self.loss_lambda = min(self.loss_lambda, self.max_loss_lambda)
         self.scheduler.step()
