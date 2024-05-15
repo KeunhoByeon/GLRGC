@@ -14,7 +14,7 @@ def get_transform(args, mode="test"):
     if mode == "train":
         sometimes = lambda aug: iaa.Sometimes(0.2, aug)
         return iaa.Sequential([
-            iaa.Crop(percent=(0.2, 1.0)),
+            iaa.Crop(percent=([0., 0.4], [0., 0.4], [0., 0.4], [0., 0.4])),
             iaa.Resize({"height": args.input_size, "width": args.input_size}, interpolation='nearest'),
             iaa.Fliplr(0.5),  # horizontally flip 50% of all images
             iaa.Flipud(0.5),  # vertically flip 50% of all images
@@ -112,9 +112,8 @@ class NoisyDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if self.stage == "train" and self.tag != "NLF":
-            image_1, image_2 = self.random_crop(image, mult_output=True)
-            x1 = self.transform(image_1.copy())
-            x2 = self.transform(image_2.copy())
+            x1 = self.transform(image.copy())
+            x2 = self.transform(image.copy())
             x1 = torch.from_numpy(x1.copy()).permute(2, 0, 1)
             x2 = torch.from_numpy(x2.copy()).permute(2, 0, 1)
             return img_path, x1, x2, gt, is_noisy
