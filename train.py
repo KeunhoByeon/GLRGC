@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
     parser.add_argument('--batch_size', default=64, type=int, help='mini-batch size')
     parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate', dest='lr')
+    parser.add_argument('--local_contrastive_weight', default=0., type=float)
     parser.add_argument('--loss_lambda', default=1., type=float)
     parser.add_argument('--loss_lambda_warmup_duration', default=10, type=int)
     parser.add_argument('--seed', default=103, type=int, help='seed for initializing training.')
