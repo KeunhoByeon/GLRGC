@@ -112,13 +112,13 @@ class NoisyDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if self.stage == "train" and self.tag != "NLF":
-            x1 = self.transform(image.copy())
-            x2 = self.transform(image.copy())
+            x1 = self.transform(image=image.copy())
+            x2 = self.transform(image=image.copy())
             x1 = torch.from_numpy(x1.copy()).permute(2, 0, 1)
             x2 = torch.from_numpy(x2.copy()).permute(2, 0, 1)
             return img_path, x1, x2, gt, is_noisy
         else:
-            x = self.transform(image)
+            x = self.transform(image=image)
             x = torch.from_numpy(x.copy()).permute(2, 0, 1)
             return img_path, x, gt, is_noisy
 
