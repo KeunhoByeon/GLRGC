@@ -146,6 +146,9 @@ class GLRGC(nn.Module):
 
             self.optimizer.step()
 
+            if epoch < 5:
+                self.network.update_ema()
+
             # Log
             preds = torch.argmax(output, dim=1)
             mat[0] += torch.sum(preds == targets).item()
@@ -176,5 +179,6 @@ class GLRGC(nn.Module):
             self.loss_lambda += self.max_loss_lambda / self.loss_lambda_warmup_duration
             self.loss_lambda = min(self.loss_lambda, self.max_loss_lambda)
         self.scheduler.step()
+        self.network.update_ema()
 
         return mat[0] / mat[1] * 100, mat_ema[0] / mat_ema[1] * 100

@@ -53,8 +53,6 @@ def run(args):
     for epoch in range(args.start_epoch, args.epochs):
         network_A.train_one_epoch(train_loader_A, epoch=epoch, logger=logger)
         network_B.train_one_epoch(train_loader_B, epoch=epoch, logger=logger)
-        network_A.network.update_ema()
-        network_B.network.update_ema()
 
         noisy_data_A = nlf(network_A, nlf_loader)
         noisy_data_B = nlf(network_B, nlf_loader)
