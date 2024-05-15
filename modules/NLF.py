@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.mixture import GaussianMixture
+import matplotlib.pyplot as plt
 
 
 class NLF:
@@ -24,23 +25,16 @@ class NLF:
                     targets = targets.cuda()
 
                 output_ema = network(inputs, ema=True)
-
                 loss = self.criterion(output_ema, targets)
                 losses.append(loss.item())
-
                 file_paths.append(input_paths[0])
 
         max_loss = max(losses)
         normalized_losses = np.array(losses) / max_loss
 
-        gmm = GaussianMixture(n_components=2, random_state=0)
-        gmm.fit(normalized_losses.reshape(-1, 1))
-        probabilities = gmm.predict_proba(normalized_losses.reshape(-1, 1))
+        gmm = GaussianMixture(n_components=2).fit(normalized_losses.reshape(-1, 1))
+        gmm_labels = gmm.predict_proba(normalized_losses.reshape(-1, 1))
 
-        clean_component_index = np.argmin(gmm.means_)
-        clean_probabilities = probabilities[:, clean_component_index]
+        noisy_samples = [file_paths[i] for i in range(len(file_paths)) if gmm_labels[i, 1] > self.threshold]
 
-        noise_indices = np.where(clean_probabilities < self.threshold)[0]
-        noise_paths = np.array(file_paths)[noise_indices]
-
-        return noise_paths
+        return noisy_samples
