@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # Validation and Debugging Arguments
     parser.add_argument('--val_freq', default=1, type=int, help='validation frequency')
     parser.add_argument('--print_freq', default=1000, type=int, help='print frequency')
-    parser.add_argument('--result', default='results_classifier_lambda_1_all_CE_new_defaultv2', type=str, help='path to results')
+    parser.add_argument('--result', default='results_classifier_lambda_1_all_CE_new_defaultv3', type=str, help='path to results')
     parser.add_argument('--tag', default=None, type=str)
     args = parser.parse_args()
 
