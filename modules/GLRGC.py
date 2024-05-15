@@ -180,6 +180,8 @@ class GLRGC(nn.Module):
             self.loss_lambda += self.max_loss_lambda / self.loss_lambda_warmup_duration
             self.loss_lambda = min(self.loss_lambda, self.max_loss_lambda)
         self.scheduler.step()
-        self.network.update_ema()
+
+        if epoch >= self.args.warmup_ema:
+            self.network.update_ema()
 
         return mat[0] / mat[1] * 100, mat_ema[0] / mat_ema[1] * 100
