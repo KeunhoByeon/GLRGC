@@ -1,10 +1,41 @@
-import numpy as np
 import random
-from PIL import Image
+
+import cv2
+import numpy as np
+import torch
+from imgaug import augmenters as iaa
 from torch.utils.data import Dataset
 from torchvision import transforms
 
 from data_module import *
+
+
+def get_transform(args, mode="test"):
+    if mode == "train":
+        sometimes = lambda aug: iaa.Sometimes(0.2, aug)
+        return iaa.Sequential([
+            iaa.Crop(percent=(0.2, 1.0)),
+            iaa.Resize({"height": args.input_size, "width": args.input_size}, interpolation='nearest'),
+            iaa.Fliplr(0.5),  # horizontally flip 50% of all images
+            iaa.Flipud(0.5),  # vertically flip 50% of all images
+            sometimes(
+                iaa.Affine(
+                    rotate=(-45, 45),  # rotate by -45 to +45 degrees
+                    shear=(-16, 16),  # shear by -16 to +16 degrees
+                    order=[0, 1],  # use nearest neighbour or bilinear interpolation (fast)
+                    cval=(0, 255),  # if mode is constant, use a cval between 0 and 255
+                    mode='symmetric'
+                )),
+            iaa.SomeOf((0, 5), [iaa.OneOf([iaa.GaussianBlur((0, 3.0)),
+                                           iaa.AverageBlur(k=(2, 7)),
+                                           iaa.MedianBlur(k=(3, 11)), ]),
+                                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+                                iaa.Dropout((0.01, 0.1), per_channel=0.5),  # randomly remove up to 10% of the pixels
+                                iaa.AddToHueAndSaturation((-20, 20)),  # change hue and saturation
+                                iaa.LinearContrast((0.5, 2.0), per_channel=0.5), ], random_order=True)
+        ], random_order=True)
+    else:
+        return iaa.Resize({"height": args.input_size, "width": args.input_size}, interpolation='nearest')
 
 
 class RandomDynamicCrop(transforms.RandomCrop):
@@ -48,19 +79,9 @@ class NoisyDataset(Dataset):
         self.update_noise_labels([])
 
         if self.stage == "train" and self.tag != "NLF":
-            self.transform = transforms.Compose([
-                transforms.Resize((input_size, input_size)),
-                transforms.RandomVerticalFlip(),
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(30),
-                transforms.ToTensor(),
-            ])
-            self.random_crop = RandomDynamicCrop(tuple(args.random_crop))
+            self.transform = get_transform(self.args, mode="train")
         else:
-            self.transform = transforms.Compose([
-                transforms.Resize((input_size, input_size)),
-                transforms.ToTensor(),
-            ])
+            self.transform = get_transform(self.args, mode="test")
 
         gts = np.array(self.data_pair)[:, 1].astype(int)
         gt_cnt = [np.sum(gts == gt_i) for gt_i in range(4)]
@@ -87,15 +108,19 @@ class NoisyDataset(Dataset):
         gt = int(gt)
         is_noisy = self.noisy_dict[img_path]
 
-        image = Image.open(img_path).convert('RGB')
+        image = cv2.imread(img_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if self.stage == "train" and self.tag != "NLF":
             image_1, image_2 = self.random_crop(image, mult_output=True)
-            x1 = self.transform(image_1)
-            x2 = self.transform(image_2)
+            x1 = self.transform(image_1.copy())
+            x2 = self.transform(image_2.copy())
+            x1 = torch.from_numpy(x1.copy()).permute(2, 0, 1)
+            x2 = torch.from_numpy(x2.copy()).permute(2, 0, 1)
             return img_path, x1, x2, gt, is_noisy
         else:
             x = self.transform(image)
+            x = torch.from_numpy(x.copy()).permute(2, 0, 1)
             return img_path, x, gt, is_noisy
 
     def __len__(self):
