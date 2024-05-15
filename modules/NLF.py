@@ -28,7 +28,7 @@ class NLF:
                 output_ema = network(inputs, ema=True)
                 curr_losses = F.cross_entropy(output_ema, targets, reduction='none')
                 losses.extend(curr_losses.tolist())
-                file_paths.extend(input_paths.tolist())
+                file_paths.extend(input_paths)
 
         max_loss = max(losses)
         normalized_losses = np.array(losses) / max_loss
