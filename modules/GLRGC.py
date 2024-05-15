@@ -144,7 +144,6 @@ class GLRGC(nn.Module):
             loss.backward()
 
             self.optimizer.step()
-            self.network.update_ema()
 
             # Log
             preds = torch.argmax(output, dim=1)
