@@ -46,6 +46,7 @@ class GLRGC(nn.Module):
         if logger is not None:
             logger.print_and_write_log(curr_line="Network {} validating".format(self.tag))
 
+        test_pred, test_pred_ema, test_gt = [], [], []
         mat, mat_ema = [0, 0], [0, 0]
         for i, (input_paths, inputs, targets, is_noisy) in enumerate(val_loader):
             if torch.cuda.is_available():
@@ -76,6 +77,10 @@ class GLRGC(nn.Module):
             mat_ema[0] += torch.sum(preds_ema == targets).item()
             mat_ema[1] += len(targets)
 
+            test_pred.extend(preds.cpu().numpy())
+            test_pred_ema.extend(preds_ema.cpu().numpy())
+            test_gt.extend(targets.cpu().numpy())
+
             if logger is not None:
                 logger.add_history('total', {'loss': loss.item(),
                                              'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
@@ -87,6 +92,7 @@ class GLRGC(nn.Module):
                    accuracy_ema=round(mat_ema[0] / mat_ema[1] * 100, 4),
                    time=time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
 
+        return test_pred, test_pred_ema, test_gt
         return mat[0] / mat[1] * 100, mat_ema[0] / mat_ema[1] * 100
 
     def train_one_epoch(self, train_loader, epoch=0, logger=None):
@@ -123,7 +129,7 @@ class GLRGC(nn.Module):
             debug = False
             if torch.isnan(loss_cross_entropy).any() or torch.isinf(loss_cross_entropy).any():
                 print("NaNs or Infs in loss_cross_entropy")
-                debug=True
+                debug = True
             if torch.isnan(loss_local_contrastive).any() or torch.isinf(loss_local_contrastive).any():
                 print("NaNs or Infs in loss_local_contrastive")
                 debug = True
@@ -132,10 +138,11 @@ class GLRGC(nn.Module):
                 debug = True
             if torch.isnan(loss_consistency).any() or torch.isinf(loss_consistency).any():
                 print("NaNs or Infs in loss_consistency")
-                debug=True
+                debug = True
             if debug:
                 print(output.shape, targets.shape, output[~is_noisy].shape, targets[~is_noisy].shape, output[is_noisy].shape, targets[is_noisy].shape)
-                import pdb; pdb.set_trace()
+                import pdb;
+                pdb.set_trace()
 
             if logger is not None:
                 logger.add_history('total', {'loss': loss.item(), 'loss_CE': loss_cross_entropy.item(), 'loss_local': loss_local_contrastive.item(),
