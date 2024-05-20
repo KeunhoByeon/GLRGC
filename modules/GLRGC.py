@@ -35,12 +35,6 @@ class GLRGC(nn.Module):
     def forward(self, x, ema=False):
         return self.network(x, ema=ema)
 
-    def train(self):
-        self.network.train()
-
-    def eval(self):
-        self.network.eval()
-
     def val(self, val_loader, epoch=0, logger=None):
         self.network.eval()
         if logger is not None:
