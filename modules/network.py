@@ -43,8 +43,8 @@ class Network(nn.Module):
         proj_in_channel = self.student.fc.in_features
         self.projection_head = ProjectionHead(input_dim=proj_in_channel, hidden_dim=proj_in_channel, output_dim=128)
 
-    def train(self):
-        self.student.train()
+    def train(self, mode=True):
+        self.student.train(mode=mode)
 
     def eval(self):
         self.student.eval()
