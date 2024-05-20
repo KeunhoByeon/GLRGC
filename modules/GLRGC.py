@@ -35,12 +35,6 @@ class GLRGC(nn.Module):
     def forward(self, x, ema=False):
         return self.network(x, ema=ema)
 
-    def train(self, mode=True):
-        self.network.train(mode=mode)
-
-    def eval(self):
-        self.network.eval()
-
     def val(self, val_loader, epoch=0, logger=None):
         self.network.eval()
         if logger is not None:
@@ -96,7 +90,7 @@ class GLRGC(nn.Module):
         return mat[0] / mat[1] * 100, mat_ema[0] / mat_ema[1] * 100
 
     def train_one_epoch(self, train_loader, epoch=0, logger=None):
-        self.network.train(mode=True)
+        self.train()
         if logger is not None:
             logger.print_and_write_log(curr_line="Network {} training".format(self.tag))
 
